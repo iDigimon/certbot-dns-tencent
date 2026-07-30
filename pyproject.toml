@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "certbot-dns-tencent"
+version = "0.1.0"
+description = "腾讯云 DNSPod 插件，用于 Certbot 的 DNS-01 验证"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "tiyee", email = "tiyee@live.com"}
+]
+keywords = [
+    "certbot-dns",
+    "certbot-plugin",
+    "certbot-dns-plugin",
+    "certbot-dns-authenticator",
+    "certbot-tencent",
+    "dnspod"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Plugins",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities"
+]
+dependencies = [
+    "certbot>=3.0.0",
+    "zope",
+    "tencentcloud-sdk-python-dnspod>=3.1.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/iDigimon/certbot-dns-tencent"
+Repository = "https://github.com/iDigimon/certbot-dns-tencent"
+Issues = "https://github.com/iDigimon/certbot-dns-tencent/issues"
+Documentation = "https://github.com/iDigimon/certbot-dns-tencent/blob/main/README.md"
+
+[project.entry-points."certbot.plugins"]
+dns-tencent = "certbot_dns_tencent.dns_tencent:Authenticator"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["certbot_dns_tencent*"]
+exclude = ["tests*"]
