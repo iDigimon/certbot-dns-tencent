@@ -1,5 +1,5 @@
-"""
-腾讯云 DNSPod 插件，用于 Certbot 的 DNS-01 验证
-"""
+"""Tencent Cloud DNSPod authenticator for Certbot 3 and 5."""
 
-__version__ = "0.1.0"
+from certbot_dns_tencent.compat import metadata
+
+__version__ = metadata.version("certbot-dns-tencent")
