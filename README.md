@@ -6,10 +6,10 @@
 
 - 支持通过腾讯云 DNSPod API 自动管理 DNS 记录
 - 支持泛域名
-- 支持 certbot 3 版本（更低版本未测试）
-- 兼容 Python 3.8+ 版本
+- 支持 Certbot 3 和 5 版本
+- 兼容 Python 3.9–3.14（Python 3.9 使用 Certbot 3，Python 3.14 使用 Certbot 5）
 - 支持 DNS-01 验证方式
-- 自动清理临时 DNS 记录
+- 自动清理本次创建的临时 DNS 记录，保留已有记录
 - 完善的错误处理和日志记录
 
 ## 安装
@@ -20,12 +20,22 @@
 pip3 install certbot-dns-tencent
 ```
 
+也可以使用 uv 安装（插件与 Certbot 在同一环境中）：
+
+```bash
+uv tool install --with certbot-dns-tencent "certbot>=5,<6"
+```
+
+Python 3.9 请安装 Certbot 3；已有 Certbot 环境应使用该环境的 Python 安装插件。
+
 ## 配置文件
 
 ```ini
 dns_tencent_secret_id = ??
 dns_tencent_secret_key = ??
 ```
+
+使用临时凭证时，可额外配置 `dns_tencent_token`。
 
 修改配置文件权限（假如文件是 `~/tencent.ini`）：
 
@@ -44,21 +54,18 @@ certbot certonly \
   -d "example.com"
 ```
 
+默认 TXT TTL 为 600 秒，可通过 `--dns-tencent-ttl` 调整；DNS 传播等待由 `--dns-tencent-propagation-seconds` 控制。
+
 ## 腾讯云权限配置
 
 确保您的腾讯云 API 密钥（SecretId / SecretKey）具有 DNSPod 的管理权限：
 
 `QcloudDNSPodFullAccess`，或自定义策略包含以下操作：
 
+- `dnspod:DescribeDomainList`
 - `dnspod:CreateRecord`
 - `dnspod:DeleteRecord`
 - `dnspod:DescribeRecordList`
-
-## 单元测试
-
-```bash
-python -m unittest discover -s tests -p "test_*.py" -v
-```
 
 ## 自动部署
 

@@ -1,148 +1,131 @@
-"""
-腾讯云 DNSPod API 客户端
-"""
+"""Tencent Cloud DNSPod API v20210323 adapter using the official SDK."""
 
-import logging
-from typing import Any, Dict, List
+from typing import Any, Optional
 
-from tencentcloud.common import credential
+from certbot import errors
+from tencentcloud.common.credential import Credential
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
 from tencentcloud.dnspod.v20210323 import dnspod_client, models
 
-logger = logging.getLogger(__name__)
-
-# DNSPod 默认解析线路名称
 DEFAULT_RECORD_LINE = "默认"
+_NO_RECORD = "ResourceNotFound.NoDataOfRecord"
 
 
 class TencentCloudDNSClient:
-    """腾讯云 DNSPod 客户端"""
+    """Manage individual records without replacing existing TXT RRsets."""
 
-    def __init__(self, secret_id: str, secret_key: str):
-        """
-        初始化腾讯云 DNSPod 客户端
+    page_size = 100
 
-        :param secret_id: 腾讯云 SecretId
-        :param secret_key: 腾讯云 SecretKey
-        """
-        self.secret_id = secret_id
-        self.secret_key = secret_key
-        self.client = self._create_client()
+    def __init__(self, secret_id: str, secret_key: str, *, token: Optional[str] = None) -> None:
+        http = HttpProfile(endpoint="dnspod.tencentcloudapi.com", reqTimeout=30)
+        # retryer=None uses the SDK's NoopRetryer. Never retry ambiguous writes.
+        self.client = dnspod_client.DnspodClient(
+            Credential(secret_id, secret_key, token), "", ClientProfile(httpProfile=http)
+        )
 
-    def _create_client(self) -> dnspod_client.DnspodClient:
-        """创建 DNSPod 客户端"""
-        cred = credential.Credential(self.secret_id, self.secret_key)
-        http_profile = HttpProfile(endpoint="dnspod.tencentcloudapi.com")
-        client_profile = ClientProfile(httpProfile=http_profile)
-        # DNSPod 是非区域性服务，region 传空字符串即可
-        return dnspod_client.DnspodClient(cred, "", client_profile)
+    def _call(self, operation: str, request: Any) -> Any:
+        try:
+            response = getattr(self.client, operation)(request)
+        except TencentCloudSDKException as exc:
+            # Do not include provider messages, credentials or TXT values.
+            raise errors.PluginError(
+                f"Tencent DNSPod {operation} failed ({exc.get_code()})"
+            ) from exc
+        except OSError as exc:
+            raise errors.PluginError(f"Tencent DNSPod {operation} failed (network error)") from exc
+        if response is None:
+            raise errors.PluginError(f"Tencent DNSPod {operation} returned an empty response")
+        return response
+
+    @staticmethod
+    def _page_complete(offset: int, count: int, total: Optional[int], kind: str) -> bool:
+        if total is None or total < offset or (count == 0 and offset < total):
+            raise errors.PluginError(f"Tencent DNSPod returned an incomplete {kind} list")
+        return offset >= total
+
+    def list_zones(self) -> list[str]:
+        """Read every page of zones before selecting the longest matching one."""
+        zones = []
+        offset = 0
+        while True:
+            request = models.DescribeDomainListRequest()
+            request.Type = "ALL"
+            request.Offset = offset
+            request.Limit = self.page_size
+            body = self._call("DescribeDomainList", request)
+            items = body.DomainList or []
+            zones.extend(item.Name for item in items)
+            offset += len(items)
+            total = body.DomainCountInfo.DomainTotal if body.DomainCountInfo else None
+            if self._page_complete(offset, len(items), total, "zone"):
+                return zones
 
     def get_domain_records(
         self, domain_name: str, sub_domain: str, record_type: str = "TXT"
-    ) -> List[Dict[str, Any]]:
-        """
-        获取域名记录
-
-        :param domain_name: 主域名
-        :param sub_domain: 主机记录
-        :param record_type: 记录类型
-        :return: 记录列表
-        """
-        try:
-            # 腾讯云 SDK 的请求对象构造函数无参，需先实例化再逐个赋值
+    ) -> list[dict[str, Any]]:
+        """List exact, enabled records on the default line, including all pages."""
+        records = []
+        offset = 0
+        while True:
             request = models.DescribeRecordListRequest()
             request.Domain = domain_name
             request.SubDomain = sub_domain
             request.RecordType = record_type
-            # 查无记录时不报错，便于做幂等的“先查后加”判断
+            request.Offset = offset
+            request.Limit = self.page_size
             request.ErrorOnEmpty = "no"
-            response = self.client.DescribeRecordList(request)
-
-            if response.RecordList:
-                return [
-                    {
-                        "record_id": record.RecordId,
-                        "sub_domain": record.Name,
-                        "type": record.Type,
-                        "value": record.Value,
-                        "ttl": record.TTL,
-                        "line": record.Line,
-                    }
-                    for record in response.RecordList
-                ]
-            return []
-        except Exception as e:
-            logger.error(f"获取域名记录失败: {e}")
-            raise
+            try:
+                body = self._call("DescribeRecordList", request)
+            except errors.PluginError as exc:
+                if getattr(exc.__cause__, "code", None) == _NO_RECORD and offset == 0:
+                    return []
+                raise
+            items = body.RecordList or []
+            records.extend(
+                {
+                    "record_id": str(item.RecordId),
+                    "sub_domain": item.Name,
+                    "type": item.Type,
+                    "value": item.Value,
+                    "ttl": item.TTL,
+                    "line": item.Line,
+                }
+                for item in items
+                if item.Type == record_type
+                and item.Name.lower() == sub_domain.lower()
+                and item.Status == "ENABLE"
+                and item.LineId == "0"
+            )
+            offset += len(items)
+            total = body.RecordCountInfo.TotalCount if body.RecordCountInfo else None
+            if self._page_complete(offset, len(items), total, "record"):
+                return records
 
     def add_domain_record(
-        self,
-        domain_name: str,
-        sub_domain: str,
-        record_type: str,
-        value: str,
-        ttl: int = 600,
-    ) -> int:
-        """
-        添加域名记录
+        self, domain_name: str, sub_domain: str, record_type: str, value: str, ttl: int = 600
+    ) -> str:
+        request = models.CreateRecordRequest()
+        request.Domain = domain_name
+        request.SubDomain = sub_domain
+        request.RecordType = record_type
+        request.RecordLine = DEFAULT_RECORD_LINE
+        request.RecordLineId = "0"
+        request.Value = value
+        request.TTL = ttl
+        body = self._call("CreateRecord", request)
+        if not body.RecordId:
+            raise errors.PluginError("Tencent DNSPod did not return a new record ID")
+        return str(body.RecordId)
 
-        :param domain_name: 主域名
-        :param sub_domain: 主机记录
-        :param record_type: 记录类型
-        :param value: 记录值
-        :param ttl: TTL 值
-        :return: 记录 ID
-        """
+    def delete_domain_record(self, domain_name: str, record_id: str) -> bool:
+        request = models.DeleteRecordRequest()
+        request.Domain = domain_name
+        request.RecordId = int(record_id)
         try:
-            request = models.CreateRecordRequest()
-            request.Domain = domain_name
-            request.SubDomain = sub_domain
-            request.RecordType = record_type
-            request.RecordLine = DEFAULT_RECORD_LINE
-            request.Value = value
-            request.TTL = ttl
-            response = self.client.CreateRecord(request)
-
-            if response.RecordId is not None:
-                logger.info(f"成功添加 DNS 记录: {sub_domain}.{domain_name} -> {value}")
-                return response.RecordId
-            else:
-                raise Exception("添加记录失败，未返回记录 ID")
-        except Exception as e:
-            logger.error(f"添加域名记录失败: {e}")
-            raise
-
-    def delete_domain_record(self, domain_name: str, record_id: int) -> bool:
-        """
-        删除域名记录
-
-        :param domain_name: 主域名
-        :param record_id: 记录 ID
-        :return: 是否成功
-        """
-        try:
-            request = models.DeleteRecordRequest()
-            request.Domain = domain_name
-            request.RecordId = record_id
-            self.client.DeleteRecord(request)
-
-            logger.info(f"成功删除 DNS 记录: {record_id}")
-            return True
-        except Exception as e:
-            logger.error(f"删除域名记录失败: {e}")
-            raise
-
-    @staticmethod
-    def get_root_domain(domain: str) -> str:
-        """
-        获取根域名
-
-        :param domain: 完整域名
-        :return: 根域名
-        """
-        # 简单的根域名提取逻辑，取最后两段
-        parts = domain.split(".")
-        if len(parts) >= 2:
-            return ".".join(parts[-2:])
-        return domain
+            self._call("DeleteRecord", request)
+        except errors.PluginError as exc:
+            if getattr(exc.__cause__, "code", None) != _NO_RECORD:
+                raise
+        return True
