@@ -1,4 +1,4 @@
-"""Tencent Cloud DNSPod authenticator for Certbot 3 and 5."""
+"""Tencent Cloud DNSPod authenticator for Certbot 3, 4 and 5."""
 
 from certbot_dns_tencent.compat import metadata
 

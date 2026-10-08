@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "certbot-dns-tencent"
-version = "2.0.0"
+version = "2.0.1"
 description = "腾讯云 DNSPod 插件，用于 Certbot 的 DNS-01 验证"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -27,13 +27,11 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "certbot>=3,<4; python_version < '3.10'",
+    "certbot>=3,<5; python_version < '3.10'",
     "certbot>=3,<6; python_version >= '3.10' and python_version < '3.14'",
     # josepy 1.x used by Certbot 3 cannot import on Python 3.14 (PEP 649).
-    "certbot>=5,<6; python_version >= '3.14'",
+    "certbot>=4,<6; python_version >= '3.14'",
     "acme>=3,<6",
-    # Certbot 3/josepy 1 still needs APIs removed in PyOpenSSL 25.
-    "pyopenssl<25; python_version < '3.10'",
     "tencentcloud-sdk-python-dnspod>=3.1.130,<4",
     "importlib-metadata>=4.6,<9; python_version < '3.10'",
 ]
@@ -58,7 +56,7 @@ packages = ["certbot_dns_tencent"]
 core-metadata-version = "2.4"
 
 [tool.hatch.build.targets.sdist]
-include = ["/certbot_dns_tencent", "/tests", "/scripts", "/README.md", "/CHANGELOG.md", "/AGENTS.md", "/LICENSE", "/pyproject.toml", "/tox.ini", "/uv.lock"]
+include = ["/certbot_dns_tencent", "/tests", "/scripts", "/README.md", "/CHANGELOG.md", "/LICENSE", "/pyproject.toml", "/tox.ini", "/uv.lock"]
 core-metadata-version = "2.4"
 
 [tool.pytest.ini_options]

@@ -1,4 +1,4 @@
-"""DNS-01 authenticator shared by Certbot 3 and 5."""
+"""DNS-01 authenticator shared by Certbot 3, 4 and 5."""
 
 import logging
 from dataclasses import dataclass
