@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2.0.1
+
+- 增加 Certbot 4 支持，覆盖 Python 3.9–3.14；Python 3.9 可使用 Certbot 3/4，Python 3.14 可使用 Certbot 4/5。
+- 移除 Python 3.9 的全局 PyOpenSSL 上限，允许 ACME 4 安装 PyOpenSSL ≥25；Certbot 3 仍需 `pyopenssl<25`。
+- CI 和 tox 扩展为 16 组兼容环境，Certbot 4 使用同主版本的 ACME，运行完整测试及安装后的 wheel 和 CLI 发现验证。
+
 ## 2.0.0
 
 - 支持 Python 3.9–3.14 与 Certbot 3/5，集中维护兼容层，移除旧 zope 装饰器。

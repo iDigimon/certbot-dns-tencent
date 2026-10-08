@@ -6,8 +6,8 @@
 
 - 支持通过腾讯云 DNSPod API 自动管理 DNS 记录
 - 支持泛域名
-- 支持 Certbot 3 和 5 版本
-- 兼容 Python 3.9–3.14（Python 3.9 使用 Certbot 3，Python 3.14 使用 Certbot 5）
+- 支持 Certbot 3、4 和 5 版本
+- 兼容 Python 3.9–3.14（Python 3.9 使用 Certbot 3/4，Python 3.14 使用 Certbot 4/5）
 - 支持 DNS-01 验证方式
 - 自动清理本次创建的临时 DNS 记录，保留已有记录
 - 完善的错误处理和日志记录
@@ -26,7 +26,8 @@ pip3 install certbot-dns-tencent
 uv tool install --with certbot-dns-tencent "certbot>=5,<6"
 ```
 
-Python 3.9 请安装 Certbot 3；已有 Certbot 环境应使用该环境的 Python 安装插件。
+Python 3.9 请安装 Certbot 3 或 4（Certbot 4.2 起要求 Python ≥3.9.2）；已有 Certbot 环境应使用该环境的 Python 安装插件。
+使用 Certbot 3 时需同时安装 `pyopenssl<25`；Certbot 4/5 由 ACME 选择兼容的 PyOpenSSL 版本。
 
 ## 配置文件
 
