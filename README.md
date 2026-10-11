@@ -7,7 +7,7 @@
 - 支持通过腾讯云 DNSPod API 自动管理 DNS 记录
 - 支持泛域名
 - 支持 Certbot 3、4 和 5 版本
-- 兼容 Python 3.9–3.14（Python 3.9 使用 Certbot 3/4，Python 3.14 使用 Certbot 4/5）
+- 兼容 Python 3.9–3.15（Python 3.9 使用 Certbot 3/4，Python 3.14–3.15 使用 Certbot 4/5）
 - 支持 DNS-01 验证方式
 - 自动清理本次创建的临时 DNS 记录，保留已有记录
 - 完善的错误处理和日志记录
