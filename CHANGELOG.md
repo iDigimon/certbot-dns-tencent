@@ -1,5 +1,10 @@
 # 更新日志
 
+## 2.0.2
+
+- 增加 Python 3.15 支持，可使用 Certbot 4/5；Certbot 3 仍仅支持 Python 3.9–3.13。
+- CI 和 tox 扩展为 18 组兼容环境，新增 Python 3.15 的完整测试及 wheel 和 CLI 发现验证。
+
 ## 2.0.1
 
 - 增加 Certbot 4 支持，覆盖 Python 3.9–3.14；Python 3.9 可使用 Certbot 3/4，Python 3.14 可使用 Certbot 4/5。
