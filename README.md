@@ -1,5 +1,8 @@
 # Certbot DNS 腾讯云插件
 
+[![PyPI version](https://badge.fury.io/py/certbot-dns-tencent.svg)](https://badge.fury.io/py/certbot-dns-tencent)
+[![Download count](https://img.shields.io/pypi/dm/certbot-dns-tencent)](https://img.shields.io/pypi/dm/certbot-dns-tencent)
+
 这是一个用于 Certbot 的腾讯云 DNSPod 插件，支持通过腾讯云 DNSPod API 进行 DNS-01 验证来获取 SSL 证书。支持泛域名。
 
 ## 功能特性
